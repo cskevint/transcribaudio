@@ -2,39 +2,24 @@
 
 import { useState, useRef, useCallback } from 'react'
 import { createClient } from '@supabase/supabase-js'
+import { useLocale, buildLanguageOptions, type Locale } from '@/lib/i18n'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
-const LANGUAGES = [
-  { label: 'Auto-detect', value: 'auto' },
-  { label: 'English', value: 'en' },
-  { label: 'English (US)', value: 'en_us' },
-  { label: 'English (UK)', value: 'en_uk' },
-  { label: 'English (Australia)', value: 'en_au' },
-  { label: 'Spanish', value: 'es' },
-  { label: 'French', value: 'fr' },
-  { label: 'German', value: 'de' },
-  { label: 'Italian', value: 'it' },
-  { label: 'Portuguese', value: 'pt' },
-  { label: 'Dutch', value: 'nl' },
-  { label: 'Hindi', value: 'hi' },
-  { label: 'Japanese', value: 'ja' },
-  { label: 'Chinese', value: 'zh' },
-  { label: 'Korean', value: 'ko' },
-  { label: 'Polish', value: 'pl' },
-  { label: 'Russian', value: 'ru' },
-  { label: 'Turkish', value: 'tr' },
-  { label: 'Ukrainian', value: 'uk' },
-  { label: 'Vietnamese', value: 'vi' },
-  { label: 'Finnish', value: 'fi' },
-]
 
 type Status = 'idle' | 'uploading' | 'processing' | 'done' | 'error'
 
+function formatTime(seconds: number) {
+  const m = Math.floor(seconds / 60).toString().padStart(2, '0')
+  const s = (seconds % 60).toString().padStart(2, '0')
+  return `${m}:${s}`
+}
+
 export default function Home() {
+  const { locale, setLocale, t } = useLocale()
   const [language, setLanguage] = useState('auto')
   const [file, setFile] = useState<File | null>(null)
   const [status, setStatus] = useState<Status>('idle')
@@ -42,8 +27,14 @@ export default function Home() {
   const [error, setError] = useState('')
   const [isDragging, setIsDragging] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [isRecording, setIsRecording] = useState(false)
+  const [recordingTime, setRecordingTime] = useState(0)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const pollRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null)
+  const audioChunksRef = useRef<Blob[]>([])
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const streamRef = useRef<MediaStream | null>(null)
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault()
@@ -65,6 +56,52 @@ export default function Home() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = e.target.files?.[0]
     if (selected) setFile(selected)
+  }
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      streamRef.current = stream
+      const mediaRecorder = new MediaRecorder(stream)
+      mediaRecorderRef.current = mediaRecorder
+      audioChunksRef.current = []
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) audioChunksRef.current.push(e.data)
+      }
+
+      mediaRecorder.onstop = () => {
+        const mimeType = mediaRecorder.mimeType || 'audio/webm'
+        const ext = mimeType.includes('ogg') ? 'ogg' : mimeType.includes('mp4') ? 'mp4' : 'webm'
+        const blob = new Blob(audioChunksRef.current, { type: mimeType })
+        const recorded = new File([blob], `recording-${Date.now()}.${ext}`, { type: mimeType })
+        setFile(recorded)
+        stream.getTracks().forEach((track) => track.stop())
+        streamRef.current = null
+      }
+
+      mediaRecorder.start()
+      setIsRecording(true)
+      setRecordingTime(0)
+      setFile(null)
+      timerRef.current = setInterval(() => {
+        setRecordingTime((t) => t + 1)
+      }, 1000)
+    } catch {
+      setError('Microphone access denied or unavailable')
+      setStatus('error')
+    }
+  }
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop()
+      setIsRecording(false)
+      if (timerRef.current) {
+        clearInterval(timerRef.current)
+        timerRef.current = null
+      }
+    }
   }
 
   const handleSubmit = async () => {
@@ -147,11 +184,15 @@ export default function Home() {
 
   const reset = () => {
     if (pollRef.current) clearTimeout(pollRef.current)
+    if (timerRef.current) clearInterval(timerRef.current)
+    if (streamRef.current) streamRef.current.getTracks().forEach((t) => t.stop())
     setFile(null)
     setStatus('idle')
     setTranscript('')
     setError('')
     setCopied(false)
+    setIsRecording(false)
+    setRecordingTime(0)
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
@@ -163,8 +204,27 @@ export default function Home() {
 
         {/* Header */}
         <div className="text-center mb-10">
-          <h1 className="text-4xl font-bold text-slate-900 tracking-tight">TranscribAudio</h1>
-          <p className="text-slate-500 mt-2 text-sm">Upload an audio file and get a transcript powered by AssemblyAI</p>
+          <div className="flex items-center justify-center gap-3 mb-3">
+            <h1 className="text-4xl font-bold text-slate-900 tracking-tight">TranscribAudio</h1>
+            <div className="flex items-center rounded-lg border border-slate-200 overflow-hidden text-xs font-medium">
+              {(['en', 'es'] as Locale[]).map((l, i) => (
+                <button
+                  key={l}
+                  onClick={() => setLocale(l)}
+                  className={[
+                    'px-2.5 py-1 transition-colors',
+                    i === 0 ? '' : 'border-l border-slate-200',
+                    locale === l
+                      ? 'bg-blue-600 text-white'
+                      : 'text-slate-500 hover:bg-slate-50',
+                  ].join(' ')}
+                >
+                  {l.toUpperCase()}
+                </button>
+              ))}
+            </div>
+          </div>
+          <p className="text-slate-500 mt-2 text-sm">{t.subtitle}</p>
         </div>
 
         {/* Card */}
@@ -173,38 +233,46 @@ export default function Home() {
           {/* Language */}
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1.5">
-              Language
+              {t.languageLabel}
             </label>
-            <select
-              value={language}
-              onChange={(e) => setLanguage(e.target.value)}
-              disabled={isLoading}
-              className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {LANGUAGES.map((lang) => (
-                <option key={lang.value} value={lang.value}>
-                  {lang.label}
-                </option>
-              ))}
-            </select>
+            {(() => {
+              const { autoDetect, featured, others } = buildLanguageOptions(locale, t)
+              return (
+                <select
+                  value={language}
+                  onChange={(e) => setLanguage(e.target.value)}
+                  disabled={isLoading}
+                  className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <option value={autoDetect.value}>{autoDetect.label}</option>
+                  {featured.map((lang) => (
+                    <option key={lang.value} value={lang.value}>{lang.label}</option>
+                  ))}
+                  <option disabled>────────────────</option>
+                  {others.map((lang) => (
+                    <option key={lang.value} value={lang.value}>{lang.label}</option>
+                  ))}
+                </select>
+              )
+            })()}
           </div>
 
           {/* File drop zone */}
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1.5">
-              Audio File
+              {t.audioFileLabel}
             </label>
             <div
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
-              onClick={() => !isLoading && fileInputRef.current?.click()}
+              onClick={() => !isLoading && !isRecording && fileInputRef.current?.click()}
               className={[
                 'border-2 border-dashed rounded-xl p-10 text-center transition-colors',
                 isDragging
                   ? 'border-blue-400 bg-blue-50'
                   : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50',
-                isLoading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer',
+                isLoading || isRecording ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer',
               ].join(' ')}
             >
               <input
@@ -213,10 +281,10 @@ export default function Home() {
                 accept="audio/*,video/*"
                 onChange={handleFileChange}
                 className="hidden"
-                disabled={isLoading}
+                disabled={isLoading || isRecording}
               />
 
-              {file ? (
+              {file && !isRecording ? (
                 <div>
                   <div className="flex items-center justify-center mb-2">
                     <svg className="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -233,25 +301,65 @@ export default function Home() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                     </svg>
                   </div>
-                  <p className="text-slate-600 font-medium text-sm">Drop an audio file here</p>
-                  <p className="text-slate-400 text-xs mt-1">or click to browse</p>
-                  <p className="text-slate-400 text-xs mt-2">MP3, MP4, WAV, M4A, FLAC, and more</p>
+                  <p className="text-slate-600 font-medium text-sm">{t.dropPrompt}</p>
+                  <p className="text-slate-400 text-xs mt-1">{t.dropBrowse}</p>
+                  <p className="text-slate-400 text-xs mt-2">{t.dropFormats}</p>
                 </div>
               )}
             </div>
           </div>
 
+          {/* Record section */}
+          <div className="flex items-center gap-3">
+            <div className="flex-1 h-px bg-slate-200" />
+            <span className="text-xs text-slate-400 font-medium">{t.orRecord}</span>
+            <div className="flex-1 h-px bg-slate-200" />
+          </div>
+
+          {isRecording ? (
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 flex-1 bg-red-50 border border-red-200 rounded-lg px-4 py-2.5">
+                <span className="relative flex h-2.5 w-2.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500" />
+                </span>
+                <span className="text-red-700 text-sm font-medium">{t.recording}</span>
+                <span className="text-red-500 text-sm font-mono ml-auto">{formatTime(recordingTime)}</span>
+              </div>
+              <button
+                onClick={stopRecording}
+                className="flex items-center gap-2 px-4 py-2.5 bg-red-600 hover:bg-red-700 active:bg-red-800 text-white font-medium rounded-lg transition-colors text-sm shrink-0"
+              >
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                  <rect x="6" y="6" width="12" height="12" rx="1" />
+                </svg>
+                {t.stop}
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={startRecording}
+              disabled={isLoading}
+              className="w-full flex items-center justify-center gap-2 py-2.5 px-4 border border-slate-300 hover:border-slate-400 hover:bg-slate-50 active:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed text-slate-700 font-medium rounded-lg transition-colors text-sm"
+            >
+              <svg className="w-4 h-4 text-red-500" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 1a4 4 0 014 4v6a4 4 0 01-8 0V5a4 4 0 014-4zm0 2a2 2 0 00-2 2v6a2 2 0 004 0V5a2 2 0 00-2-2zm-7 9a7 7 0 0014 0h2a9 9 0 01-8 8.94V23h-2v-2.06A9 9 0 013 12H5z" />
+              </svg>
+              {t.recordButton}
+            </button>
+          )}
+
           {/* Submit */}
           <button
             onClick={handleSubmit}
-            disabled={!file || isLoading}
+            disabled={!file || isLoading || isRecording}
             className="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors text-sm"
           >
             {status === 'uploading'
-              ? 'Uploading...'
+              ? t.uploading
               : status === 'processing'
-              ? 'Transcribing...'
-              : 'Transcribe'}
+              ? t.transcribing
+              : t.transcribe}
           </button>
 
           {/* Loading status */}
@@ -261,22 +369,20 @@ export default function Home() {
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
               </svg>
-              {status === 'uploading'
-                ? 'Uploading audio to storage...'
-                : 'Processing transcription — this may take a moment for longer files...'}
+              {status === 'uploading' ? t.uploadingStatus : t.processingStatus}
             </div>
           )}
 
           {/* Error */}
           {status === 'error' && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-              <p className="text-red-700 text-sm font-medium">Something went wrong</p>
+              <p className="text-red-700 text-sm font-medium">{t.errorTitle}</p>
               <p className="text-red-600 text-sm mt-0.5">{error}</p>
               <button
                 onClick={reset}
                 className="text-red-600 text-sm font-medium mt-3 hover:underline"
               >
-                Try again
+                {t.tryAgain}
               </button>
             </div>
           )}
@@ -285,19 +391,19 @@ export default function Home() {
           {status === 'done' && (
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <label className="block text-sm font-medium text-slate-700">Transcript</label>
+                <label className="block text-sm font-medium text-slate-700">{t.transcriptLabel}</label>
                 <div className="flex items-center gap-4">
                   <button
                     onClick={handleCopy}
                     className="text-xs text-blue-600 hover:underline font-medium"
                   >
-                    {copied ? 'Copied!' : 'Copy'}
+                    {copied ? t.copied : t.copy}
                   </button>
                   <button
                     onClick={reset}
                     className="text-xs text-slate-500 hover:underline"
                   >
-                    New file
+                    {t.newFile}
                   </button>
                 </div>
               </div>
