@@ -259,124 +259,130 @@ export default function Home() {
           </div>
 
           {/* File drop zone */}
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5">
-              {t.audioFileLabel}
-            </label>
-            <div
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
-              onClick={() => !isLoading && !isRecording && fileInputRef.current?.click()}
-              className={[
-                "border-2 border-dashed rounded-xl p-10 text-center transition-colors",
-                isDragging
-                  ? "border-blue-400 bg-blue-50"
-                  : file && !isRecording && !isLoading
-                    ? "border-green-300 bg-green-50 hover:border-green-400 hover:bg-green-100"
-                    : "border-slate-200 hover:border-slate-300 hover:bg-slate-50",
-                isLoading || isRecording ? "opacity-50 cursor-not-allowed" : "cursor-pointer",
-              ].join(" ")}
-            >
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="audio/*,video/*"
-                onChange={handleFileChange}
-                className="hidden"
-                disabled={isLoading || isRecording}
-              />
+          {!isLoading && status !== "done" && (
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                {t.audioFileLabel}
+              </label>
+              <div
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                onClick={() => !isLoading && !isRecording && fileInputRef.current?.click()}
+                className={[
+                  "border-2 border-dashed rounded-xl p-10 text-center transition-colors",
+                  isDragging
+                    ? "border-blue-400 bg-blue-50"
+                    : file && !isRecording && !isLoading
+                      ? "border-green-300 bg-green-50 hover:border-green-400 hover:bg-green-100"
+                      : "border-slate-200 hover:border-slate-300 hover:bg-slate-50",
+                  isLoading || isRecording ? "opacity-50 cursor-not-allowed" : "cursor-pointer",
+                ].join(" ")}
+              >
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="audio/*,video/*"
+                  onChange={handleFileChange}
+                  className="hidden"
+                  disabled={isLoading || isRecording}
+                />
 
-              {file && !isRecording ? (
-                <div>
-                  <div className="flex items-center justify-center mb-2">
-                    <svg
-                      className="w-8 h-8 text-green-500"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={1.5}
-                        d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"
-                      />
-                    </svg>
+                {file && !isRecording ? (
+                  <div>
+                    <div className="flex items-center justify-center mb-2">
+                      <svg
+                        className="w-8 h-8 text-green-500"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={1.5}
+                          d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"
+                        />
+                      </svg>
+                    </div>
+                    <p className="text-slate-900 font-medium text-sm">{file.name}</p>
+                    <p className="text-slate-400 text-xs mt-1">
+                      {(file.size / 1024 / 1024).toFixed(2)} MB
+                    </p>
                   </div>
-                  <p className="text-slate-900 font-medium text-sm">{file.name}</p>
-                  <p className="text-slate-400 text-xs mt-1">
-                    {(file.size / 1024 / 1024).toFixed(2)} MB
-                  </p>
-                </div>
-              ) : (
-                <div>
-                  <div className="flex items-center justify-center mb-3">
-                    <svg
-                      className="w-10 h-10 text-slate-300"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={1.5}
-                        d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                      />
-                    </svg>
+                ) : (
+                  <div>
+                    <div className="flex items-center justify-center mb-3">
+                      <svg
+                        className="w-10 h-10 text-slate-300"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={1.5}
+                          d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                        />
+                      </svg>
+                    </div>
+                    <p className="text-slate-600 font-medium text-sm">{t.dropPrompt}</p>
+                    <p className="text-slate-400 text-xs mt-1">{t.dropBrowse}</p>
+                    <p className="text-slate-400 text-xs mt-2">{t.dropFormats}</p>
+                    <p className="text-slate-400 text-xs mt-1">
+                      {t.upTo} {MAX_FILE_SIZE_MB} MB
+                    </p>
                   </div>
-                  <p className="text-slate-600 font-medium text-sm">{t.dropPrompt}</p>
-                  <p className="text-slate-400 text-xs mt-1">{t.dropBrowse}</p>
-                  <p className="text-slate-400 text-xs mt-2">{t.dropFormats}</p>
-                  <p className="text-slate-400 text-xs mt-1">
-                    {t.upTo} {MAX_FILE_SIZE_MB} MB
-                  </p>
-                </div>
-              )}
+                )}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Record section */}
-          <div className="flex items-center gap-3">
-            <div className="flex-1 h-px bg-slate-200" />
-            <span className="text-xs text-slate-400 font-medium">{t.orRecord}</span>
-            <div className="flex-1 h-px bg-slate-200" />
-          </div>
-
-          {isRecording ? (
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2 flex-1 bg-red-50 border border-red-200 rounded-lg px-4 py-2.5">
-                <span className="relative flex h-2.5 w-2.5">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500" />
-                </span>
-                <span className="text-red-700 text-sm font-medium">{t.recording}</span>
-                <span className="text-red-500 text-sm font-mono ml-auto">
-                  {formatTime(recordingTime)}
-                </span>
+          {!isLoading && status !== "done" && (
+            <>
+              <div className="flex items-center gap-3">
+                <div className="flex-1 h-px bg-slate-200" />
+                <span className="text-xs text-slate-400 font-medium">{t.orRecord}</span>
+                <div className="flex-1 h-px bg-slate-200" />
               </div>
-              <button
-                onClick={stopRecording}
-                className="flex items-center gap-2 px-4 py-2.5 bg-red-600 hover:bg-red-700 active:bg-red-800 text-white font-medium rounded-lg transition-colors text-sm shrink-0"
-              >
-                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                  <rect x="6" y="6" width="12" height="12" rx="1" />
-                </svg>
-                {t.stop}
-              </button>
-            </div>
-          ) : (
-            <button
-              onClick={startRecording}
-              disabled={isLoading}
-              className="w-full flex items-center justify-center gap-2 py-2.5 px-4 border border-slate-300 hover:border-slate-400 hover:bg-slate-50 active:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed text-slate-700 font-medium rounded-lg transition-colors text-sm"
-            >
-              <svg className="w-4 h-4 text-red-500" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12 1a4 4 0 014 4v6a4 4 0 01-8 0V5a4 4 0 014-4zm0 2a2 2 0 00-2 2v6a2 2 0 004 0V5a2 2 0 00-2-2zm-7 9a7 7 0 0014 0h2a9 9 0 01-8 8.94V23h-2v-2.06A9 9 0 013 12H5z" />
-              </svg>
-              {t.recordButton}
-            </button>
+
+              {isRecording ? (
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2 flex-1 bg-red-50 border border-red-200 rounded-lg px-4 py-2.5">
+                    <span className="relative flex h-2.5 w-2.5">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500" />
+                    </span>
+                    <span className="text-red-700 text-sm font-medium">{t.recording}</span>
+                    <span className="text-red-500 text-sm font-mono ml-auto">
+                      {formatTime(recordingTime)}
+                    </span>
+                  </div>
+                  <button
+                    onClick={stopRecording}
+                    className="flex items-center gap-2 px-4 py-2.5 bg-red-600 hover:bg-red-700 active:bg-red-800 text-white font-medium rounded-lg transition-colors text-sm shrink-0"
+                  >
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                      <rect x="6" y="6" width="12" height="12" rx="1" />
+                    </svg>
+                    {t.stop}
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={startRecording}
+                  disabled={isLoading}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 px-4 border border-slate-300 hover:border-slate-400 hover:bg-slate-50 active:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed text-slate-700 font-medium rounded-lg transition-colors text-sm"
+                >
+                  <svg className="w-4 h-4 text-red-500" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 1a4 4 0 014 4v6a4 4 0 01-8 0V5a4 4 0 014-4zm0 2a2 2 0 00-2 2v6a2 2 0 004 0V5a2 2 0 00-2-2zm-7 9a7 7 0 0014 0h2a9 9 0 01-8 8.94V23h-2v-2.06A9 9 0 013 12H5z" />
+                  </svg>
+                  {t.recordButton}
+                </button>
+              )}
+            </>
           )}
 
           {/* Submit */}
