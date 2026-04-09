@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback } from 'react'
 
 export type Locale = 'en' | 'es'
 
+export const MAX_FILE_SIZE_MB = 50
+
 const STORAGE_KEY = 'transcribaudio-locale'
 
 const translations = {
@@ -14,6 +16,7 @@ const translations = {
     dropPrompt: 'Drop an audio file here',
     dropBrowse: 'or click to browse',
     dropFormats: 'MP3, MP4, WAV, M4A, FLAC, and more',
+    upTo: 'Up to',
     orRecord: 'or record audio',
     recordButton: 'Record from microphone',
     recording: 'Recording',
@@ -59,6 +62,7 @@ const translations = {
     dropPrompt: 'Arrastra un archivo de audio aquí',
     dropBrowse: 'o haz clic para buscar',
     dropFormats: 'MP3, MP4, WAV, M4A, FLAC, y más',
+    upTo: 'Hasta',
     orRecord: 'o graba audio',
     recordButton: 'Grabar desde el micrófono',
     recording: 'Grabando',

@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback } from 'react'
 import { createClient } from '@supabase/supabase-js'
-import { useLocale, buildLanguageOptions, type Locale } from '@/lib/i18n'
+import { useLocale, buildLanguageOptions, MAX_FILE_SIZE_MB, type Locale } from '@/lib/i18n'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -271,6 +271,8 @@ export default function Home() {
                 'border-2 border-dashed rounded-xl p-10 text-center transition-colors',
                 isDragging
                   ? 'border-blue-400 bg-blue-50'
+                  : file && !isRecording && !isLoading
+                  ? 'border-green-300 bg-green-50 hover:border-green-400 hover:bg-green-100'
                   : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50',
                 isLoading || isRecording ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer',
               ].join(' ')}
@@ -287,7 +289,7 @@ export default function Home() {
               {file && !isRecording ? (
                 <div>
                   <div className="flex items-center justify-center mb-2">
-                    <svg className="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
                     </svg>
                   </div>
@@ -304,6 +306,7 @@ export default function Home() {
                   <p className="text-slate-600 font-medium text-sm">{t.dropPrompt}</p>
                   <p className="text-slate-400 text-xs mt-1">{t.dropBrowse}</p>
                   <p className="text-slate-400 text-xs mt-2">{t.dropFormats}</p>
+                  <p className="text-slate-400 text-xs mt-1">{t.upTo} {MAX_FILE_SIZE_MB} MB</p>
                 </div>
               )}
             </div>
@@ -353,7 +356,13 @@ export default function Home() {
           <button
             onClick={handleSubmit}
             disabled={!file || isLoading || isRecording}
-            className="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors text-sm"
+            className={[
+              'w-full py-2.5 px-4 text-white font-medium rounded-lg transition-colors text-sm',
+              file && !isLoading && !isRecording
+                ? 'bg-green-600 hover:bg-green-700 active:bg-green-800'
+                : 'bg-blue-600 hover:bg-blue-700 active:bg-blue-800',
+              'disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed',
+            ].join(' ')}
           >
             {status === 'uploading'
               ? t.uploading
