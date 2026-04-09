@@ -6,7 +6,8 @@ const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "TranscribAudio",
-  description: "Upload an audio file and get a transcript powered by AssemblyAI",
+  description: "Upload an audio file and get a transcript",
+  manifest: "/manifest.json",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
