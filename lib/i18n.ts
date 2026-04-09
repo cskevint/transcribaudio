@@ -32,6 +32,9 @@ const translations = {
     copied: "Copied!",
     copy: "Copy",
     newFile: "New audio",
+    improve: "Improve with AI",
+    improving: "Improving...",
+    undo: "Undo",
     // Transcription language names
     autoDetect: "Auto-detect",
     lang_en: "English",
@@ -79,6 +82,9 @@ const translations = {
     copied: "¡Copiado!",
     copy: "Copiar",
     newFile: "Audio nuevo",
+    improve: "Mejorar con IA",
+    improving: "Mejorando...",
+    undo: "Deshacer",
     // Nombres de idiomas de transcripción
     autoDetect: "Detección automática",
     lang_en: "Inglés",
