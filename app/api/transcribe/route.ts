@@ -8,8 +8,8 @@ export async function POST(req: NextRequest) {
 
   const params =
     languageCode === 'auto'
-      ? { audio_url: audioUrl as string, language_detection: true as const, speech_models: ['universal-2'] as const }
-      : { audio_url: audioUrl as string, language_code: languageCode as string, speech_models: ['universal-2'] as const }
+      ? { audio_url: audioUrl as string, language_detection: true as const, speech_models: ['universal-2' as string] }
+      : { audio_url: audioUrl as string, language_code: languageCode as string, speech_models: ['universal-2' as string] }
 
   const transcript = await client.transcripts.submit(params)
 
