@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
 const BUCKET = "audio-files";
@@ -50,14 +50,7 @@ async function collectObjectPaths(folderPath: string): Promise<string[]> {
   return paths;
 }
 
-export async function GET(req: NextRequest) {
-  const secret = process.env.CRON_SECRET;
-  const auth = req.headers.get("authorization");
-
-  if (!secret || auth !== `Bearer ${secret}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
+export async function GET() {
   try {
     const samplePath = join(process.cwd(), "public", SAMPLE_OBJECT);
     const sampleBytes = await readFile(samplePath);
