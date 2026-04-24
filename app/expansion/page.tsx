@@ -2,6 +2,7 @@
 
 import { FormEvent, useRef, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
+import Image from "next/image";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -243,11 +244,21 @@ export default function ExpansionPage() {
   };
 
   return (
-    <main className="min-h-screen bg-slate-50 px-4 py-16">
+    <main className="min-h-screen bg-slate-50 px-4 py-10">
       <div className="relative mx-auto w-full max-w-2xl rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
-        <h1 className="text-center text-3xl font-bold tracking-tight text-slate-900">
-          Reflexiones
-        </h1>
+        <div className="relative -mx-8 -mt-8 mb-6 h-44 w-[calc(100%+4rem)] overflow-hidden rounded-t-2xl sm:h-52">
+          <Image
+            src="/header.png"
+            alt="Decoracion de encabezado"
+            fill
+            priority
+            className="object-cover"
+          />
+          <div className="absolute inset-0 bg-slate-900/35" />
+          <h1 className="absolute inset-x-0 bottom-5 text-center text-4xl font-bold tracking-tight text-white drop-shadow-sm sm:text-5xl">
+            Reflexiones
+          </h1>
+        </div>
 
         {!submitted ? (
           <button
